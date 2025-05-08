@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>📦 Cargo Tracking</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+    }
+    label, input, button {
+      display: block;
+      width: 100%;
+      margin-bottom: 1em;
+      padding: 10px;
+      font-size: 1rem;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .result {
+      background: #f8f8f8;
+      padding: 20px;
+      border-radius: 6px;
+      margin-top: 20px;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <h2>📦 Track Your Shipment</h2>
+
+  <label for="carrier">Carrier Slug (e.g. dhl, fedex)</label>
+  <input id="carrier" placeholder="e.g. dhl" />
+
+  <label for="trackingNo">Tracking Number</label>
+  <input id="trackingNo" placeholder="e.g. 1234567890" />
+
+  <button onclick="trackShipment()">🔍 Track</button>
+
+  <div class="result" id="output">Tracking result will appear here.</div>
+
+  <script>
+    async function trackShipment() {
+      const slug = document.getElementById("carrier").value.trim();
+      const trackingNo = document.getElementById("trackingNo").value.trim();
+      const output = document.getElementById("output");
+
+      if (!slug || !trackingNo) {
+        output.textContent = "❗ Please enter both carrier and tracking number.";
+        return;
+      }
+
+      output.textContent = "⏳ Fetching tracking info...";
+
+      try {
+        const res = await fetch("/api/track", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ slug, trackingNo })
+        });
+
+        const data = await res.json();
+        if (data.error) {
+          output.textContent = "❌ Error: " + data.error;
+          return;
+        }
+
+        const tracking = data.tracking;
+        output.innerHTML = `
+          <strong>Status:</strong> ${tracking.tag}<br/>
+          <strong>Tracking Number:</strong> ${tracking.tracking_number}<br/>
+          <strong>Carrier:</strong> ${tracking.slug}<br/>
+          <strong>Origin:</strong> ${tracking.origin_country_iso3 || "N/A"}<br/>
+          <strong>Destination:</strong> ${tracking.destination_country_iso3 || "N/A"}<br/>
+          <strong>Expected Delivery:</strong> ${tracking.expected_delivery || "N/A"}<br/>
+        `;
+      } catch (err) {
+        output.textContent = "❌ Failed to fetch tracking data.";
+      }
+    }
+  </script>
+</body>
+</html>
